@@ -86,8 +86,7 @@ public class ArachniScanner extends Builder {
                 }
             }
         } catch (ArachniApiException exception) {
-            log.warn("Error when start Arachni Security Scan");
-            log.debug(exception.getMessage());
+            log.warn("Error when start Arachni Security Scan", exception);
             console.println(exception.getMessage());
             return false;
         }
@@ -101,7 +100,7 @@ public class ArachniScanner extends Builder {
             api.shutdownScan(scanId);
             log.info("Shutdown successful.");
         } catch (Exception exception) {
-            
+            log.warn("Error when shutdown Arachni Security Scan", exception);
         }
     }
     
