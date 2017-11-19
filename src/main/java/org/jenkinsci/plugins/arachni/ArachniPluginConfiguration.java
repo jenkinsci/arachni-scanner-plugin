@@ -6,7 +6,6 @@ import java.net.URL;
 
 import javax.servlet.ServletException;
 
-import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.slf4j.Logger;
