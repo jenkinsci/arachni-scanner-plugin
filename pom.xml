@@ -14,8 +14,8 @@
   <properties>
     <jenkins.version>2.7.3</jenkins.version>
   </properties>
-  <name>Arachni Scanner</name>
-  <description>Runs security scans on an Arachni Rest Server.</description>
+  <name>Arachni Scanner Plugin</name>
+  <description>Runs security scans on an Arachni Rest Server. For communication the Arachni REST API is used.</description>
   <url>https://wiki.jenkins-ci.org/display/JENKINS/TODO+Plugin</url>
 
   <dependencies>
