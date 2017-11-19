@@ -1,10 +1,19 @@
 package org.jenkinsci.plugins.arachni;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import javax.servlet.ServletException;
+
+import org.apache.commons.lang3.StringUtils;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import hudson.Extension;
+import hudson.util.FormValidation;
 import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONObject;
 
@@ -33,6 +42,33 @@ public class ArachniPluginConfiguration extends GlobalConfiguration {
         req.bindJSON(this, json);
         save();
         return true;
+    }
+    
+    public FormValidation doCheckArachniServerUrl(@QueryParameter String value) throws IOException, ServletException {
+        try {
+            new URL(value);
+            return FormValidation.ok();
+        } catch (MalformedURLException excecption) {
+            return FormValidation.error("URL is not valid.");
+        }
+    }
+    
+    public FormValidation doCheckUser(@QueryParameter String value, @QueryParameter boolean basicAuth) throws IOException, ServletException {
+        if (basicAuth) {
+            if ((value == null) || value.isEmpty()) {
+                return FormValidation.error("User should not be empty for basic authentication.");
+            }
+        }
+        return FormValidation.ok();
+    }
+
+    public FormValidation doCheckPassword(@QueryParameter String value, @QueryParameter boolean basicAuth) throws IOException, ServletException {
+        if (basicAuth) {
+            if ((value == null) || value.isEmpty()) {
+                return FormValidation.error("Password should not be empty for basic authentication.");
+            }
+        }
+        return FormValidation.ok();
     }
 
     public void setArachniServerUrl(String arachniServerUrl) {

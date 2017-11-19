@@ -5,9 +5,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 
+import javax.servlet.ServletException;
+
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +28,7 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import hudson.util.FormValidation;
 
 public class ArachniScanner extends Builder {
     Logger log = LoggerFactory.getLogger(ArachniScanner.class);
@@ -55,6 +60,15 @@ public class ArachniScanner extends Builder {
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
+        }
+        
+        public FormValidation doCheckUrl(@QueryParameter String value) throws IOException, ServletException {
+            try {
+                new URL(value);
+                return FormValidation.ok();
+            } catch (MalformedURLException excecption) {
+                return FormValidation.error("URL is not valid.");
+            }
         }
     }
 
