@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.arachni;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -22,7 +23,11 @@ public class ArachniRunListener extends RunListener<Run<?,?>> {
             List<Builder> builders = project.getBuilders();
             for (Builder builder : builders) {
                 if (builder instanceof ArachniScanner) {
-                    ((ArachniScanner) builder).shutdownScan();
+                    try {
+                        ((ArachniScanner) builder).shutdownScan();
+                    } catch (IOException exception) {
+                        log.error(exception.getMessage(), exception);
+                    }
                 }
             }
         }

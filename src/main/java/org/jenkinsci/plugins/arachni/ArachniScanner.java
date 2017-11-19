@@ -1,6 +1,9 @@
 package org.jenkinsci.plugins.arachni;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URL;
 
@@ -14,6 +17,7 @@ import de.irissmann.arachni.client.rest.ArachniApiRestBuilder;
 import de.irissmann.arachni.client.rest.request.RequestScan;
 import de.irissmann.arachni.client.rest.response.ResponseScan;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -71,39 +75,58 @@ public class ArachniScanner extends Builder {
             scanId = api.performScan(scan);
             console.println("Scan started with id: " + scanId);
             log.info("Scan started with id: {}", scanId);
-            
+
             ResponseScan scanInfo;
             while (true) {
                 Thread.sleep(5000);
                 scanInfo = api.monitorScan(scanId);
-                console.println("Status: " + scanInfo.getStatus()
-                + " - Pages found: " + scanInfo.getStatistics().getFoundPages()
-                + " - Pages audited: " + scanInfo.getStatistics().getAuditedPages());
-                if (! scanInfo.isBusy()) {
+                console.println("Status: " + scanInfo.getStatus() + " - Pages found: "
+                        + scanInfo.getStatistics().getFoundPages() + " - Pages audited: "
+                        + scanInfo.getStatistics().getAuditedPages());
+                if (!scanInfo.isBusy()) {
                     console.println("Scan finished for id: " + scanId);
                     log.info("Scan finished for id {}", scanId);
                     break;
                 }
             }
+
+            FilePath arachniPath = build.getWorkspace();
+            log.debug("Path for arachni results: {}", arachniPath);
+
+            if (arachniPath != null) {
+                File reportFile = new File(arachniPath.toString(), "report.zip");
+                if (!reportFile.exists()) {
+                    reportFile.createNewFile();
+                }
+                OutputStream outstream = new FileOutputStream(reportFile);
+                api.getScanReportHtml(scanId, outstream);
+            }
         } catch (ArachniApiException exception) {
             log.warn("Error when start Arachni Security Scan", exception);
             console.println(exception.getMessage());
             return false;
+        } finally {
+            api.close();
         }
+
         return true;
     }
-    
-    protected void shutdownScan() {
+
+    protected void shutdownScan() throws IOException {
+        log.info("Shutdown scanner for id: {}", scanId);
+        ArachniApi api = getApi(ArachniPluginConfiguration.get());
+
         try {
-            log.info("Shutdown scanner for id: {}", scanId);
-            ArachniApi api = getApi(ArachniPluginConfiguration.get());
             api.shutdownScan(scanId);
             log.info("Shutdown successful.");
         } catch (Exception exception) {
             log.warn("Error when shutdown Arachni Security Scan", exception);
+        } finally {
+            api.close();
         }
+
     }
-    
+
     private ArachniApi getApi(ArachniPluginConfiguration config) throws IOException {
         if (config.getBasicAuth()) {
             return ArachniApiRestBuilder.create(new URL(config.getArachniServerUrl()))
