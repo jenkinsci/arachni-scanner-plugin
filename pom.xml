@@ -22,7 +22,18 @@
     <dependency>
       <groupId>de.irissmann</groupId>
       <artifactId>arachni-client</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>0.1.0-SNAPSHOT</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-lang3</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.4</version>
     </dependency>
   </dependencies>
 
@@ -32,19 +43,23 @@
       <url>http://opensource.org/licenses/MIT</url>
     </license>
   </licenses>
+
   <!-- Assuming you want to host on @jenkinsci: <scm> <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection> 
     <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection> 
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url> </scm> -->
+
   <repositories>
     <repository>
       <id>repo.jenkins-ci.org</id>
       <url>https://repo.jenkins-ci.org/public/</url>
     </repository>
   </repositories>
+
   <pluginRepositories>
     <pluginRepository>
       <id>repo.jenkins-ci.org</id>
       <url>https://repo.jenkins-ci.org/public/</url>
     </pluginRepository>
   </pluginRepositories>
+
 </project>

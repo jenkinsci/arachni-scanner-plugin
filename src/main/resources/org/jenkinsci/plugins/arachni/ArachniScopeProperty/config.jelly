@@ -1,9 +1,12 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
-    <f:entry title="${%URL to scan}" field="url">
-        <f:textbox/>
+    <f:entry title="${%Page limit}" field="pageLimit">
+        <f:textbox/>    
     </f:entry>
 
-    <f:optionalProperty title="${%Set scope}" field="scope"/>        
+    <f:entry title="${%Exclude path pattern}" field="excludePathPattern">
+        <f:textbox/>    
+    </f:entry>
+
 </j:jelly>

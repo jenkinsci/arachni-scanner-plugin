@@ -15,10 +15,11 @@ import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.irissmann.arachni.api.ArachniApi;
-import de.irissmann.arachni.api.ArachniApiException;
-import de.irissmann.arachni.client.rest.ArachniApiRestBuilder;
-import de.irissmann.arachni.client.rest.request.RequestScan;
+import de.irissmann.arachni.client.ArachniClient;
+import de.irissmann.arachni.client.Scan;
+import de.irissmann.arachni.client.rest.ArachniRestClientBuilder;
+import de.irissmann.arachni.client.rest.request.ScanRequest;
+import de.irissmann.arachni.client.rest.request.Scope;
 import de.irissmann.arachni.client.rest.response.ResponseScan;
 import hudson.Extension;
 import hudson.FilePath;
@@ -34,16 +35,23 @@ public class ArachniScanner extends Builder {
     Logger log = LoggerFactory.getLogger(ArachniScanner.class);
 
     private String url;
-    private String scanId;
+    private ArachniScopeProperty scope;
+    private Scan scan;
     private PrintStream console;
+    private ArachniClient arachniClient;
 
     @DataBoundConstructor
-    public ArachniScanner(String url) {
+    public ArachniScanner(String url, ArachniScopeProperty scope) {
         this.url = url;
+        this.scope = scope;
     }
 
     public String getUrl() {
         return url;
+    }
+    
+    public ArachniScopeProperty getScope() {
+        return scope;
     }
 
     @Extension
@@ -82,24 +90,34 @@ public class ArachniScanner extends Builder {
         console.println("Arachni server URL: " + arachniUrl);
         console.println("Site under scan: " + url);
 
-        ArachniApi api = getApi(config);
+        arachniClient = getArachniClient(config);
 
-        RequestScan scan = new RequestScan(url);
+        Scope scannerScope = null;
+        if (scope != null) {
+            scannerScope = Scope.create()
+                    .pageLimit(scope.getPageLimitAsInt())
+                    .addExcludePathPatterns(scope.getExcludePathPattern())
+                    .build();
+        }
+        ScanRequest scanRequest = ScanRequest.create()
+                .url(url)
+                .scope(scannerScope)
+                .build();
         try {
-            scanId = api.performScan(scan);
-            console.println("Scan started with id: " + scanId);
-            log.info("Scan started with id: {}", scanId);
+            scan = arachniClient.performScan(scanRequest);
+            console.println("Scan started with id: " + scan.getId());
+            log.info("Scan started with id: {}", scan.getId());
 
             ResponseScan scanInfo;
             while (true) {
                 Thread.sleep(5000);
-                scanInfo = api.monitorScan(scanId);
+                scanInfo = scan.monitor();
                 console.println("Status: " + scanInfo.getStatus() + " - Pages found: "
                         + scanInfo.getStatistics().getFoundPages() + " - Pages audited: "
                         + scanInfo.getStatistics().getAuditedPages());
                 if (!scanInfo.isBusy()) {
-                    console.println("Scan finished for id: " + scanId);
-                    log.info("Scan finished for id {}", scanId);
+                    console.println("Scan finished for id: " + scan.getId());
+                    log.info("Scan finished for id {}", scan.getId());
                     break;
                 }
             }
@@ -108,45 +126,41 @@ public class ArachniScanner extends Builder {
             log.debug("Path for arachni results: {}", arachniPath);
 
             if (arachniPath != null) {
-                File reportFile = new File(arachniPath.toString(), "report.zip");
+                File reportFile = new File(arachniPath.getRemote(), "arachni-report-html.zip");
                 if (!reportFile.exists()) {
                     reportFile.createNewFile();
                 }
                 OutputStream outstream = new FileOutputStream(reportFile);
-                api.getScanReportHtml(scanId, outstream);
+                scan.getReportHtml(outstream);
             }
-        } catch (ArachniApiException exception) {
+        } catch (Exception exception) {
             log.warn("Error when start Arachni Security Scan", exception);
             console.println(exception.getMessage());
             return false;
-        } finally {
-            api.close();
         }
 
         return true;
     }
 
     protected void shutdownScan() throws IOException {
-        log.info("Shutdown scanner for id: {}", scanId);
-        ArachniApi api = getApi(ArachniPluginConfiguration.get());
+        log.info("Shutdown scanner for id: {}", scan.getId());
 
         try {
-            api.shutdownScan(scanId);
+            scan.shutdown();
             log.info("Shutdown successful.");
         } catch (Exception exception) {
             log.warn("Error when shutdown Arachni Security Scan", exception);
         } finally {
-            api.close();
+            arachniClient.close();
         }
-
     }
 
-    private ArachniApi getApi(ArachniPluginConfiguration config) throws IOException {
+    private ArachniClient getArachniClient(ArachniPluginConfiguration config) throws IOException {
         if (config.getBasicAuth()) {
-            return ArachniApiRestBuilder.create(new URL(config.getArachniServerUrl()))
+            return ArachniRestClientBuilder.create(new URL(config.getArachniServerUrl()))
                     .addCredentials(config.getUser(), config.getPassword()).build();
         } else {
-            return ArachniApiRestBuilder.create(new URL(config.getArachniServerUrl())).build();
+            return ArachniRestClientBuilder.create(new URL(config.getArachniServerUrl())).build();
         }
     }
 }
