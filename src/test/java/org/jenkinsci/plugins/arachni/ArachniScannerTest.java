@@ -9,6 +9,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.util.FormValidation;
+import jenkins.model.GlobalConfiguration;
 
 public class ArachniScannerTest {
     
@@ -19,6 +20,9 @@ public class ArachniScannerTest {
     public void test() throws Exception {
         FreeStyleProject project = jenkins.createFreeStyleProject();
         project.getBuildersList().add(new ArachniScanner("http://localhost:8080", null));
+        ArachniPluginConfiguration config = new ArachniPluginConfiguration();
+        config.setArachniServerUrl("http://arachniserver.de");
+        GlobalConfiguration.all().add(config);
         FreeStyleBuild build = project.scheduleBuild2(0).get();
     }
     

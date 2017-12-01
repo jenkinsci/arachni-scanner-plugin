@@ -155,7 +155,7 @@ public class ArachniScanner extends Builder {
         }
     }
 
-    private ArachniClient getArachniClient(ArachniPluginConfiguration config) throws IOException {
+    private ArachniClient getArachniClient(ArachniPluginConfiguration config) throws MalformedURLException {
         if (config.getBasicAuth()) {
             return ArachniRestClientBuilder.create(new URL(config.getArachniServerUrl()))
                     .addCredentials(config.getUser(), config.getPassword()).build();
