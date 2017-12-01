@@ -58,7 +58,9 @@ public class ArachniScannerTest {
         project.getBuildersList().add(new ArachniScanner("http://test-site:9090", null));
         ArachniPluginConfiguration config = new ArachniPluginConfiguration();
         config.setArachniServerUrl("http://localhost:8877");
-        GlobalConfiguration.all().add(config);
+        
+        jenkins.getInstance().getDescriptorList(GlobalConfiguration.class).add(config);
+        
         FreeStyleBuild build = project.scheduleBuild2(0).get();
         String s = FileUtils.readFileToString(build.getLogFile());
         assertThat(s, containsString("Scan finished for id: 919813cdb162af0c091c34fca3823b89"));
