@@ -1,67 +1,87 @@
 package org.jenkinsci.plugins.arachni;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.containing;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.io.File;
-import java.io.FileReader;
 import java.net.URL;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.http.HttpHeaders;
-import org.apache.http.entity.ContentType;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.mockito.MockitoAnnotations;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import com.google.gson.JsonParser;
-
+import de.irissmann.arachni.client.Scan;
+import de.irissmann.arachni.client.rest.ArachniRestClient;
+import de.irissmann.arachni.client.rest.ArachniRestClientBuilder;
+import de.irissmann.arachni.client.rest.request.ScanRequest;
+import de.irissmann.arachni.client.rest.response.ResponseScan;
+import de.irissmann.arachni.client.rest.response.Statistics;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.util.FormValidation;
-import jenkins.model.GlobalConfiguration;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({ArachniPluginConfiguration.class, ArachniRestClient.class, ArachniRestClientBuilder.class, Scan.class,
+    Statistics.class, ResponseScan.class})
+@PowerMockIgnore({"javax.crypto.*" })
 public class ArachniScannerTest {
     
     @Rule
     public JenkinsRule jenkins = new JenkinsRule();
 
-    @Rule
-    public WireMockRule wireMockRule = new WireMockRule(8877);
-    
+    @Before
+    public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
+    }
+
     @Test
     public void performScan() throws Exception {
-        stubFor(post(urlEqualTo("/scans"))
-                .withHeader(HttpHeaders.CONTENT_TYPE, containing(ContentType.APPLICATION_JSON.toString()))
-                .willReturn(aResponse().withStatus(200)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString())
-                        .withBody("{\"id\":\"919813cdb162af0c091c34fca3823b89\"}")));
-
-        stubFor(get(urlEqualTo("/scans/919813cdb162af0c091c34fca3823b89"))
-                .willReturn(aResponse().withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString())
-                .withBody(getJsonFromFile("responseMonitorScanDone.json"))));
-
-        stubFor(get(urlEqualTo("/scans/919813cdb162af0c091c34fca3823b89/report.html.zip")).willReturn(aResponse().withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE, "application/zip")));
-
         FreeStyleProject project = jenkins.createFreeStyleProject();
         project.getBuildersList().add(new ArachniScanner("http://test-site:9090", null));
         ArachniPluginConfiguration config = new ArachniPluginConfiguration();
         config.setArachniServerUrl("http://localhost:8877");
         
-        jenkins.getInstance().getDescriptorList(GlobalConfiguration.class).add(config);
+        // init mock objects
+        PowerMockito.mockStatic(ArachniPluginConfiguration.class);
+        when(ArachniPluginConfiguration.get()).thenReturn(config);
         
+        Statistics statistics = mock(Statistics.class);
+        when(statistics.getFoundPages()).thenReturn(3);
+        when(statistics.getAuditedPages()).thenReturn(3);
+        
+        ResponseScan scanInfo = mock(ResponseScan.class);
+        when(scanInfo.getStatus()).thenReturn("done");
+        when(scanInfo.getStatistics()).thenReturn(statistics);
+        when(scanInfo.isBusy()).thenReturn(false);
+        
+        Scan scan = mock(Scan.class);
+        when(scan.getId()).thenReturn("919813cdb162af0c091c34fca3823b89");
+        when(scan.monitor()).thenReturn(scanInfo);
+        
+        ArachniRestClient arachniClient = mock(ArachniRestClient.class);
+        when(arachniClient.performScan(any(ScanRequest.class))).thenReturn(scan);
+        
+        ArachniRestClientBuilder clientBuilder = PowerMockito.mock(ArachniRestClientBuilder.class);
+        when(clientBuilder.build()).thenReturn(arachniClient);
+
+        PowerMockito.mockStatic(ArachniRestClientBuilder.class);
+        when(ArachniRestClientBuilder.create(new URL("http://localhost:8877"))).thenReturn(clientBuilder);
+        
+        // start builder
         FreeStyleBuild build = project.scheduleBuild2(0).get();
+        
+        // validate result
         String s = FileUtils.readFileToString(build.getLogFile());
         assertThat(s, containsString("Scan finished for id: 919813cdb162af0c091c34fca3823b89"));
     }
@@ -80,12 +100,5 @@ public class ArachniScannerTest {
                 .DescriptorImpl()
                 .doCheckUrl("http://localhost:8d080");
         assertEquals("URL is not valid.", validation.getMessage());
-    }
-
-    private String getJsonFromFile(String filename) throws Exception {
-        URL url = this.getClass().getResource(filename);
-        File file = new File(url.toURI());
-        
-        return new JsonParser().parse(new FileReader(file)).toString();
     }
 }
