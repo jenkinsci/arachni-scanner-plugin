@@ -17,10 +17,10 @@ import org.slf4j.LoggerFactory;
 
 import de.irissmann.arachni.client.ArachniClient;
 import de.irissmann.arachni.client.Scan;
+import de.irissmann.arachni.client.request.ScanRequest;
+import de.irissmann.arachni.client.request.Scope;
+import de.irissmann.arachni.client.response.ScanResponse;
 import de.irissmann.arachni.client.rest.ArachniRestClientBuilder;
-import de.irissmann.arachni.client.rest.request.ScanRequest;
-import de.irissmann.arachni.client.rest.request.Scope;
-import de.irissmann.arachni.client.rest.response.ResponseScan;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -49,7 +49,7 @@ public class ArachniScanner extends Builder {
     public String getUrl() {
         return url;
     }
-    
+
     public ArachniScopeProperty getScope() {
         return scope;
     }
@@ -69,7 +69,7 @@ public class ArachniScanner extends Builder {
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
         }
-        
+
         public FormValidation doCheckUrl(@QueryParameter String value) throws IOException, ServletException {
             try {
                 new URL(value);
@@ -81,8 +81,8 @@ public class ArachniScanner extends Builder {
     }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
-            throws InterruptedException, IOException {
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) 
+            throws InterruptedException {
         console = listener.getLogger();
         ArachniPluginConfiguration config = ArachniPluginConfiguration.get();
         String arachniUrl = config.getArachniServerUrl();
@@ -94,21 +94,16 @@ public class ArachniScanner extends Builder {
 
         Scope scannerScope = null;
         if (scope != null) {
-            scannerScope = Scope.create()
-                    .pageLimit(scope.getPageLimitAsInt())
-                    .addExcludePathPatterns(scope.getExcludePathPattern())
-                    .build();
+            scannerScope = Scope.create().pageLimit(scope.getPageLimitAsInt())
+                    .addExcludePathPatterns(scope.getExcludePathPattern()).build();
         }
-        ScanRequest scanRequest = ScanRequest.create()
-                .url(url)
-                .scope(scannerScope)
-                .build();
+        ScanRequest scanRequest = ScanRequest.create().url(url).scope(scannerScope).build();
         try {
             scan = arachniClient.performScan(scanRequest);
             console.println("Scan started with id: " + scan.getId());
             log.info("Scan started with id: {}", scan.getId());
 
-            ResponseScan scanInfo;
+            ScanResponse scanInfo;
             while (true) {
                 Thread.sleep(5000);
                 scanInfo = scan.monitor();
@@ -155,12 +150,12 @@ public class ArachniScanner extends Builder {
         }
     }
 
-    private ArachniClient getArachniClient(ArachniPluginConfiguration config) throws MalformedURLException {
+    private ArachniClient getArachniClient(ArachniPluginConfiguration config) {
         if (config.getBasicAuth()) {
-            return ArachniRestClientBuilder.create(new URL(config.getArachniServerUrl()))
+            return ArachniRestClientBuilder.create(config.getArachniServerUrl())
                     .addCredentials(config.getUser(), config.getPassword()).build();
         } else {
-            return ArachniRestClientBuilder.create(new URL(config.getArachniServerUrl())).build();
+            return ArachniRestClientBuilder.create(config.getArachniServerUrl()).build();
         }
     }
 }

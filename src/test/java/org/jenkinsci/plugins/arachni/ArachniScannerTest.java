@@ -22,18 +22,18 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import de.irissmann.arachni.client.Scan;
+import de.irissmann.arachni.client.request.ScanRequest;
+import de.irissmann.arachni.client.response.ScanResponse;
+import de.irissmann.arachni.client.response.Statistics;
 import de.irissmann.arachni.client.rest.ArachniRestClient;
 import de.irissmann.arachni.client.rest.ArachniRestClientBuilder;
-import de.irissmann.arachni.client.rest.request.ScanRequest;
-import de.irissmann.arachni.client.rest.response.ResponseScan;
-import de.irissmann.arachni.client.rest.response.Statistics;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.util.FormValidation;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ArachniPluginConfiguration.class, ArachniRestClient.class, ArachniRestClientBuilder.class, Scan.class,
-    Statistics.class, ResponseScan.class})
+    Statistics.class, ScanResponse.class})
 @PowerMockIgnore({"javax.crypto.*" })
 public class ArachniScannerTest {
     
@@ -60,7 +60,7 @@ public class ArachniScannerTest {
         when(statistics.getFoundPages()).thenReturn(3);
         when(statistics.getAuditedPages()).thenReturn(3);
         
-        ResponseScan scanInfo = mock(ResponseScan.class);
+        ScanResponse scanInfo = mock(ScanResponse.class);
         when(scanInfo.getStatus()).thenReturn("done");
         when(scanInfo.getStatistics()).thenReturn(statistics);
         when(scanInfo.isBusy()).thenReturn(false);
@@ -76,7 +76,7 @@ public class ArachniScannerTest {
         when(clientBuilder.build()).thenReturn(arachniClient);
 
         PowerMockito.mockStatic(ArachniRestClientBuilder.class);
-        when(ArachniRestClientBuilder.create(new URL("http://localhost:8877"))).thenReturn(clientBuilder);
+        when(ArachniRestClientBuilder.create("http://localhost:8877")).thenReturn(clientBuilder);
         
         // start builder
         FreeStyleBuild build = project.scheduleBuild2(0).get();
