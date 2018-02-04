@@ -98,6 +98,7 @@ public class ArachniScanner extends Builder {
                     .addExcludePathPatterns(scope.getExcludePathPattern()).build();
         }
         ScanRequest scanRequest = ScanRequest.create().url(url).scope(scannerScope).build();
+        OutputStream outstream = null;
         try {
             scan = arachniClient.performScan(scanRequest);
             console.println("Scan started with id: " + scan.getId());
@@ -122,16 +123,28 @@ public class ArachniScanner extends Builder {
 
             if (arachniPath != null) {
                 File reportFile = new File(arachniPath.getRemote(), "arachni-report-html.zip");
-                if (!reportFile.exists()) {
-                    reportFile.createNewFile();
+                if (! reportFile.exists()) {
+                    if (! reportFile.createNewFile()) {
+                        throw new Exception("Could not create file " + reportFile.toString());
+                    }
                 }
-                OutputStream outstream = new FileOutputStream(reportFile);
+                outstream = new FileOutputStream(reportFile);
                 scan.getReportHtml(outstream);
             }
         } catch (Exception exception) {
             log.warn("Error when start Arachni Security Scan", exception);
             console.println(exception.getMessage());
             return false;
+        } finally {
+            try {
+                if (outstream != null) {
+                    outstream.close();
+                }
+            } catch (IOException e) {
+                log.warn("Error when start Arachni Security Scan", e);
+                console.println(e.getMessage());
+                return false;
+            }
         }
 
         return true;
