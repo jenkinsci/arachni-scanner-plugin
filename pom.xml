@@ -8,7 +8,7 @@
     <relativePath />
   </parent>
   <artifactId>arachni-scanner</artifactId>
-  <version>0.9.2</version>
+  <version>0.9.3-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <properties>
     <jenkins.version>2.7.3</jenkins.version>
