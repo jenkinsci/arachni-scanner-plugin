@@ -12,4 +12,4 @@ Prerequisites
 
 Configuration
 -------------
-See the wiki page (under construction).
+See the [wiki page](https://wiki.jenkins.io/display/JENKINS/Arachni+Scanner+plugin).
