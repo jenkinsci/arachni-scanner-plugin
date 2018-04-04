@@ -10,6 +10,7 @@ import java.net.URL;
 
 import javax.servlet.ServletException;
 
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
@@ -21,17 +22,19 @@ import de.irissmann.arachni.client.request.ScanRequest;
 import de.irissmann.arachni.client.request.Scope;
 import de.irissmann.arachni.client.response.ScanResponse;
 import de.irissmann.arachni.client.rest.ArachniRestClientBuilder;
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import jenkins.tasks.SimpleBuildStep;
 
-public class ArachniScanner extends Builder {
+public class ArachniScanner extends Builder implements SimpleBuildStep {
     Logger log = LoggerFactory.getLogger(ArachniScanner.class);
 
     private String url;
@@ -54,6 +57,7 @@ public class ArachniScanner extends Builder {
         return scope;
     }
 
+    @Symbol("arachniScanner")
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
         public DescriptorImpl() {
@@ -81,8 +85,8 @@ public class ArachniScanner extends Builder {
     }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) 
-            throws InterruptedException {
+    public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener)
+            throws InterruptedException, IOException {
         console = listener.getLogger();
         ArachniPluginConfiguration config = ArachniPluginConfiguration.get();
         String arachniUrl = config.getArachniServerUrl();
@@ -118,11 +122,10 @@ public class ArachniScanner extends Builder {
                 }
             }
 
-            FilePath arachniPath = build.getWorkspace();
-            log.debug("Path for arachni results: {}", arachniPath);
+            log.debug("Path for arachni results: {}", workspace);
 
-            if (arachniPath != null) {
-                File reportFile = new File(arachniPath.getRemote(), "arachni-report-html.zip");
+            if (workspace != null) {
+                File reportFile = new File(workspace.getRemote(), "arachni-report-html.zip");
                 if (! reportFile.exists()) {
                     if (! reportFile.createNewFile()) {
                         throw new Exception("Could not create file " + reportFile.toString());
@@ -134,7 +137,7 @@ public class ArachniScanner extends Builder {
         } catch (Exception exception) {
             log.warn("Error when start Arachni Security Scan", exception);
             console.println(exception.getMessage());
-            return false;
+            throw new AbortException();
         } finally {
             try {
                 if (outstream != null) {
@@ -143,11 +146,9 @@ public class ArachniScanner extends Builder {
             } catch (IOException e) {
                 log.warn("Error when start Arachni Security Scan", e);
                 console.println(e.getMessage());
-                return false;
+                throw new AbortException();
             }
         }
-
-        return true;
     }
 
     protected void shutdownScan() throws IOException {
