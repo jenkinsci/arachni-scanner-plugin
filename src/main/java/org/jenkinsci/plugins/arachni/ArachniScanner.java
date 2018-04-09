@@ -10,6 +10,7 @@ import java.net.URL;
 
 import javax.servlet.ServletException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import de.irissmann.arachni.client.ArachniClient;
 import de.irissmann.arachni.client.Scan;
 import de.irissmann.arachni.client.request.ScanRequest;
+import de.irissmann.arachni.client.request.ScanRequestBuilder;
 import de.irissmann.arachni.client.request.Scope;
 import de.irissmann.arachni.client.response.ScanResponse;
 import de.irissmann.arachni.client.rest.ArachniRestClientBuilder;
@@ -38,14 +40,16 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
     Logger log = LoggerFactory.getLogger(ArachniScanner.class);
 
     private String url;
+    private String checks;
     private ArachniScopeProperty scope;
     private Scan scan;
     private PrintStream console;
     private ArachniClient arachniClient;
 
     @DataBoundConstructor
-    public ArachniScanner(String url, ArachniScopeProperty scope) {
+    public ArachniScanner(String url, String checks, ArachniScopeProperty scope) {
         this.url = url;
+        this.checks = checks;
         this.scope = scope;
     }
 
@@ -53,6 +57,10 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
         return url;
     }
 
+    public String getChecks() {
+        return checks;
+    }
+    
     public ArachniScopeProperty getScope() {
         return scope;
     }
@@ -101,7 +109,18 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
             scannerScope = Scope.create().pageLimit(scope.getPageLimitAsInt())
                     .addExcludePathPatterns(scope.getExcludePathPattern()).build();
         }
-        ScanRequest scanRequest = ScanRequest.create().url(url).scope(scannerScope).build();
+        
+        ScanRequestBuilder requestBuilder = ScanRequest.create().url(url).scope(scannerScope);
+        if (StringUtils.isNotBlank(checks)) {
+            for (String check : checks.split(",")) {
+                requestBuilder.addCheck(check.trim());
+            }
+        } else {
+            requestBuilder.addCheck("*");
+        }
+        
+        ScanRequest scanRequest = requestBuilder.build();
+
         OutputStream outstream = null;
         try {
             scan = arachniClient.performScan(scanRequest);
@@ -150,7 +169,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
             }
         }
     }
-
+    
     protected void shutdownScan() throws IOException {
         log.info("Shutdown scanner for id: {}", scan.getId());
 
