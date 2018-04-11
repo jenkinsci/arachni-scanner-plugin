@@ -5,5 +5,9 @@
         <f:textbox/>
     </f:entry>
 
+    <f:entry title="${%Checks}" field="checks">
+        <f:textbox/>
+    </f:entry>
+
     <f:optionalProperty title="${%Set scope}" field="scope"/>        
 </j:jelly>

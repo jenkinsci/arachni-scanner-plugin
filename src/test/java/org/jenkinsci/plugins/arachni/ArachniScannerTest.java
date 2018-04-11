@@ -7,8 +7,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.net.URL;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,7 +46,7 @@ public class ArachniScannerTest {
     @Test
     public void performScan() throws Exception {
         FreeStyleProject project = jenkins.createFreeStyleProject();
-        project.getBuildersList().add(new ArachniScanner("http://test-site:9090", null));
+        project.getBuildersList().add(new ArachniScanner("http://test-site:9090", null, null));
         ArachniPluginConfiguration config = new ArachniPluginConfiguration();
         config.setArachniServerUrl("http://localhost:8877");
         
