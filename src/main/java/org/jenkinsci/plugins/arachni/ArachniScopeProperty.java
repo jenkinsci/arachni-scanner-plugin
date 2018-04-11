@@ -1,10 +1,12 @@
 package org.jenkinsci.plugins.arachni;
 
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 import hudson.Extension;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 
 public class ArachniScopeProperty implements Describable<ArachniScopeProperty> {
@@ -16,7 +18,7 @@ public class ArachniScopeProperty implements Describable<ArachniScopeProperty> {
         this.pageLimit = pageLimit;
         this.excludePathPattern = excludePathPattern;
     }
-    
+
     public String getPageLimit() {
         if (pageLimit > 0) {
             return Integer.toString(pageLimit);
@@ -31,7 +33,7 @@ public class ArachniScopeProperty implements Describable<ArachniScopeProperty> {
     public String getExcludePathPattern() {
         return excludePathPattern;
     }
-    
+
     @Override
     public Descriptor<ArachniScopeProperty> getDescriptor() {
         return (DescriptorImpl) Jenkins.getInstance().getDescriptor(ArachniScopeProperty.class);
@@ -43,6 +45,15 @@ public class ArachniScopeProperty implements Describable<ArachniScopeProperty> {
         @Override
         public String getDisplayName() {
             return "Scope";
+        }
+
+        public FormValidation doCheckPageLimit(@QueryParameter String value) {
+            try {
+                Integer.parseUnsignedInt(value);
+                return FormValidation.ok();
+            } catch (NumberFormatException excecption) {
+                return FormValidation.error("Not valid.");
+            }
         }
     }
 }

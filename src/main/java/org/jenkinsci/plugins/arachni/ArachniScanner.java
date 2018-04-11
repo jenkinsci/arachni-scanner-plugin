@@ -8,8 +8,6 @@ import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import javax.servlet.ServletException;
-
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -82,7 +80,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
             return true;
         }
 
-        public FormValidation doCheckUrl(@QueryParameter String value) throws IOException, ServletException {
+        public FormValidation doCheckUrl(@QueryParameter String value) {
             try {
                 new URL(value);
                 return FormValidation.ok();
