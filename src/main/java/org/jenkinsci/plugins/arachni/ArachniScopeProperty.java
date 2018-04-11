@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.arachni;
 
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -48,8 +49,11 @@ public class ArachniScopeProperty implements Describable<ArachniScopeProperty> {
         }
 
         public FormValidation doCheckPageLimit(@QueryParameter String value) {
+            if (StringUtils.isBlank(value)) {
+                return FormValidation.ok();
+            }
             try {
-                Integer.parseUnsignedInt(value);
+                Integer.parseInt(value);
                 return FormValidation.ok();
             } catch (NumberFormatException excecption) {
                 return FormValidation.error("Not valid.");
