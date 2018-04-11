@@ -82,7 +82,7 @@
   </licenses>
 
   <scm>
-    <connection>scm:git:git://github.com/jenkinsci/arachni-scanner-plugin.git</connection>
+    <connection>scm:git:git@github.com:jenkinsci/arachni-scanner-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/arachni-scanner-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/arachni-scanner-plugin</url>
     <tag>v0.9.3</tag>
