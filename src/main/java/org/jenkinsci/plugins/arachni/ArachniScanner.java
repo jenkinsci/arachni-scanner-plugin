@@ -22,6 +22,7 @@ import de.irissmann.arachni.client.request.ScanRequestBuilder;
 import de.irissmann.arachni.client.request.Scope;
 import de.irissmann.arachni.client.response.ScanResponse;
 import de.irissmann.arachni.client.rest.ArachniRestClientBuilder;
+import de.irissmann.arachni.client.rest.ArachniUtils.MergeConflictStrategy;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;
@@ -39,16 +40,18 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
 
     private String url;
     private String checks;
+    private UserConfigProperty userConfig;
     private ArachniScopeProperty scope;
     private Scan scan;
     private PrintStream console;
     private ArachniClient arachniClient;
 
     @DataBoundConstructor
-    public ArachniScanner(String url, String checks, ArachniScopeProperty scope) {
+    public ArachniScanner(String url, String checks, ArachniScopeProperty scope, UserConfigProperty userConfig) {
         this.url = url;
         this.checks = checks;
         this.scope = scope;
+        this.userConfig = userConfig;
     }
 
     public String getUrl() {
@@ -58,9 +61,13 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
     public String getChecks() {
         return checks;
     }
-    
+
     public ArachniScopeProperty getScope() {
         return scope;
+    }
+
+    public UserConfigProperty getUserConfig() {
+        return userConfig;
     }
 
     @Symbol("arachniScanner")
@@ -107,7 +114,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
             scannerScope = Scope.create().pageLimit(scope.getPageLimitAsInt())
                     .addExcludePathPatterns(scope.getExcludePathPattern()).build();
         }
-        
+
         ScanRequestBuilder requestBuilder = ScanRequest.create().url(url).scope(scannerScope);
         if (StringUtils.isNotBlank(checks)) {
             for (String check : checks.split(",")) {
@@ -116,12 +123,24 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
         } else {
             requestBuilder.addCheck("*");
         }
-        
         ScanRequest scanRequest = requestBuilder.build();
+
+        // reads user configuration file if exists
+        String configuration = null;
+        if (userConfig != null && StringUtils.isNotBlank(userConfig.getFilename())) {
+            FilePath configFile = workspace.child(userConfig.getFilename());
+            log.debug("Configuration filename: {}", configFile.getRemote());
+            if (!configFile.exists()) {
+                String message = String.format("Configuration file %s does not exists", userConfig.getFilename());
+                log.warn(message);
+                throw new AbortException(message);
+            }
+            configuration = configFile.readToString();
+        }
 
         OutputStream outstream = null;
         try {
-            scan = arachniClient.performScan(scanRequest);
+            scan = arachniClient.performScan(scanRequest, configuration);
             console.println("Scan started with id: " + scan.getId());
             log.info("Scan started with id: {}", scan.getId());
 
@@ -141,34 +160,30 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
 
             log.debug("Path for arachni results: {}", workspace);
 
-            if (workspace != null) {
-                File reportFile = new File(workspace.getRemote(), "arachni-report-html.zip");
-                if (! reportFile.exists()) {
-                    if (! reportFile.createNewFile()) {
-                        throw new Exception("Could not create file " + reportFile.toString());
-                    }
+            File reportFile = new File(workspace.getRemote(), "arachni-report-html.zip");
+            if (!reportFile.exists()) {
+                if (!reportFile.createNewFile()) {
+                    throw new AbortException("Could not create file " + reportFile.toString());
                 }
-                outstream = new FileOutputStream(reportFile);
-                scan.getReportHtml(outstream);
             }
+            outstream = new FileOutputStream(reportFile);
+            scan.getReportHtml(outstream);
         } catch (Exception exception) {
             log.warn("Error when start Arachni Security Scan", exception);
             console.println(exception.getMessage());
             throw new AbortException();
         } finally {
-            try {
-                if (outstream != null) {
-                    outstream.close();
-                }
-            } catch (IOException e) {
-                log.warn("Error when start Arachni Security Scan", e);
-                console.println(e.getMessage());
-                throw new AbortException();
+            if (outstream != null) {
+                outstream.close();
             }
         }
     }
-    
+
     protected void shutdownScan() throws IOException {
+        if (scan == null) {
+            return;
+        }
+
         log.info("Shutdown scanner for id: {}", scan.getId());
 
         try {
@@ -182,11 +197,12 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
     }
 
     private ArachniClient getArachniClient(ArachniPluginConfiguration config) {
+        ArachniRestClientBuilder builder = ArachniRestClientBuilder.create(config.getArachniServerUrl());
         if (config.getBasicAuth()) {
-            return ArachniRestClientBuilder.create(config.getArachniServerUrl())
-                    .addCredentials(config.getUser(), config.getPassword()).build();
-        } else {
-            return ArachniRestClientBuilder.create(config.getArachniServerUrl()).build();
+            builder.addCredentials(config.getUser(), config.getPassword());
         }
+        builder.setMergeConflictStratey(MergeConflictStrategy.PREFER_STRING);
+
+        return builder.build();
     }
 }
