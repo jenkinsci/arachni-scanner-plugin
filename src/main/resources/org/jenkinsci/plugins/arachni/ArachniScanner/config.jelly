@@ -9,5 +9,7 @@
         <f:textbox/>
     </f:entry>
 
-    <f:optionalProperty title="${%Set scope}" field="scope"/>        
+    <f:optionalProperty title="${%Set scope}" field="scope"/>
+    
+    <f:optionalProperty field="userConfig" title="${%Use configuration file}"/>
 </j:jelly>

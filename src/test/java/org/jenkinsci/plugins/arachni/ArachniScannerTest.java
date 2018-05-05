@@ -4,6 +4,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,7 +47,7 @@ public class ArachniScannerTest {
     @Test
     public void performScan() throws Exception {
         FreeStyleProject project = jenkins.createFreeStyleProject();
-        project.getBuildersList().add(new ArachniScanner("http://test-site:9090", null, null));
+        project.getBuildersList().add(new ArachniScanner("http://test-site:9090", null, null, null));
         ArachniPluginConfiguration config = new ArachniPluginConfiguration();
         config.setArachniServerUrl("http://localhost:8877");
         
@@ -68,7 +69,7 @@ public class ArachniScannerTest {
         when(scan.monitor()).thenReturn(scanInfo);
         
         ArachniRestClient arachniClient = mock(ArachniRestClient.class);
-        when(arachniClient.performScan(any(ScanRequest.class))).thenReturn(scan);
+        when(arachniClient.performScan(any(ScanRequest.class), isNull(String.class))).thenReturn(scan);
         
         ArachniRestClientBuilder clientBuilder = PowerMockito.mock(ArachniRestClientBuilder.class);
         when(clientBuilder.build()).thenReturn(arachniClient);
