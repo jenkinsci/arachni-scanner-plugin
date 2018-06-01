@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.arachni;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -164,7 +165,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
             }
             outstream = new FileOutputStream(reportFile);
             scan.getReportHtml(outstream);
-        } catch (Exception exception) {
+        } catch (FileNotFoundException exception) {
             log.warning("Error when start Arachni Security Scan");
             console.println(exception.getMessage());
             throw new AbortException();
