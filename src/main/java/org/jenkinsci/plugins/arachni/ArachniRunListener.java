@@ -2,9 +2,7 @@ package org.jenkinsci.plugins.arachni;
 
 import java.io.IOException;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 
 import hudson.Extension;
 import hudson.model.FreeStyleProject;
@@ -14,7 +12,7 @@ import hudson.tasks.Builder;
 
 @Extension
 public class ArachniRunListener extends RunListener<Run<?,?>> {
-    Logger log = LoggerFactory.getLogger(ArachniRunListener.class);
+    Logger log = Logger.getLogger(ArachniRunListener.class.getName());
     
     @Override
     public void onFinalized(Run<?, ?> run) {
@@ -26,7 +24,7 @@ public class ArachniRunListener extends RunListener<Run<?,?>> {
                     try {
                         ((ArachniScanner) builder).shutdownScan();
                     } catch (IOException exception) {
-                        log.error(exception.getMessage(), exception);
+                        log.severe(exception.getMessage());
                     }
                 }
             }

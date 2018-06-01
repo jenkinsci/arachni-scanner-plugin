@@ -8,8 +8,6 @@ import javax.servlet.ServletException;
 
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import hudson.Extension;
 import hudson.util.FormValidation;
@@ -18,7 +16,6 @@ import net.sf.json.JSONObject;
 
 @Extension
 public class ArachniPluginConfiguration extends GlobalConfiguration {
-    Logger log = LoggerFactory.getLogger(ArachniPluginConfiguration.class);
 
     private String arachniServerUrl;
     
