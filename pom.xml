@@ -11,7 +11,7 @@
   <version>0.9.7-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <properties>
-    <jenkins.version>2.124</jenkins.version>
+    <jenkins.version>2.121.1</jenkins.version>
     <java.level>8</java.level>
   </properties>
   <name>Arachni Scanner Plugin</name>

@@ -9,6 +9,7 @@ import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
@@ -39,7 +40,7 @@ import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
 
 public class ArachniScanner extends Builder implements SimpleBuildStep {
-    transient private static final Logger log = Logger.getLogger(ArachniScanner.class.getName());
+    private static final Logger log = Logger.getLogger(ArachniScanner.class.getName());
 
     protected static final String FORMAT_HTML = "html";
     protected static final String FORMAT_JSON = "json";
@@ -149,7 +150,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
             FilePath configFile = workspace.child(userConfig.getFilename());
             if (!configFile.exists()) {
                 String message = String.format("Configuration file %s does not exists", userConfig.getFilename());
-                log.warning(message);
+                log.log(Level.WARNING, message);
                 throw new AbortException(message);
             }
             configuration = configFile.readToString();
@@ -159,7 +160,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
         try {
             scan = arachniClient.performScan(scanRequest, configuration);
             console.println("Scan started with id: " + scan.getId());
-            log.info(String.format("Scan started with id: %s", scan.getId()));
+            log.log(Level.INFO, "Scan started with id: {0}", scan.getId());
 
             ScanResponse scanInfo;
             while (true) {
@@ -170,7 +171,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
                         + scanInfo.getStatistics().getAuditedPages());
                 if (!scanInfo.isBusy()) {
                     console.println("Scan finished for id: " + scan.getId());
-                    log.info(String.format("Scan finished for id %s", scan.getId()));
+                    log.log(Level.INFO, "Scan finished for id {0}", scan.getId());
                     break;
                 }
             }
@@ -200,7 +201,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
                 throw new AbortException("Report format not supported");
             }
         } catch (FileNotFoundException exception) {
-            log.warning("Error when start Arachni Security Scan");
+            log.log(Level.WARNING, "Error when start Arachni Security Scan", exception);
             console.println(exception.getMessage());
             throw new AbortException();
         } finally {
@@ -215,13 +216,13 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
             return;
         }
 
-        log.info(String.format("Shutdown scanner for id: %s", scan.getId()));
+        log.log(Level.INFO, "Shutdown scanner for id: {0}", scan.getId());
 
         try {
             scan.shutdown();
-            log.info("Shutdown successful.");
+            log.log(Level.INFO, "Shutdown successful.");
         } catch (Exception exception) {
-            log.warning("Error when shutdown Arachni Security Scan");
+            log.log(Level.WARNING, "Error when shutdown Arachni Security Scan", exception);
         } finally {
             arachniClient.close();
         }
