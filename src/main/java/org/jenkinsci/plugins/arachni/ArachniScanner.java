@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
@@ -187,13 +188,13 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
                 scan.getReportHtml(outstream);
                 break;
             case FORMAT_JSON:
-                writeZipFile(scan.getReportJson().getBytes(), "arachni-report.json", outstream);
+                writeZipFile(scan.getReportJson().getBytes(StandardCharsets.UTF_8), "arachni-report.json", outstream);
                 break;
             case FORMAT_XML:
-                writeZipFile(scan.getReportXml().getBytes(), "arachni-report.xml", outstream);
+                writeZipFile(scan.getReportXml().getBytes(StandardCharsets.UTF_8), "arachni-report.xml", outstream);
                 break;
             case FORMAT_YAML:
-                writeZipFile(scan.getReportYaml().getBytes(), "arachni-report.yml", outstream);
+                writeZipFile(scan.getReportYaml().getBytes(StandardCharsets.UTF_8), "arachni-report.yml", outstream);
                 break;
             default:
                 throw new AbortException("Report format not supported");
