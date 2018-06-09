@@ -47,7 +47,7 @@ public class ArachniScannerTest {
     @Test
     public void performScan() throws Exception {
         FreeStyleProject project = jenkins.createFreeStyleProject();
-        project.getBuildersList().add(new ArachniScanner("http://test-site:9090", null, null, null));
+        project.getBuildersList().add(new ArachniScanner("http://test-site:9090", null, null, null, ArachniScanner.FORMAT_HTML));
         ArachniPluginConfiguration config = new ArachniPluginConfiguration();
         config.setArachniServerUrl("http://localhost:8877");
         

@@ -11,6 +11,8 @@ import java.net.URL;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tools.zip.ZipEntry;
+import org.apache.tools.zip.ZipOutputStream;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -38,20 +40,28 @@ import jenkins.tasks.SimpleBuildStep;
 public class ArachniScanner extends Builder implements SimpleBuildStep {
     transient private static final Logger log = Logger.getLogger(ArachniScanner.class.getName());
 
+    protected static final String FORMAT_HTML = "html";
+    protected static final String FORMAT_JSON = "json";
+    protected static final String FORMAT_XML = "xml";
+    protected static final String FORMAT_YAML = "yaml";
+
     private String url;
     private String checks;
     private UserConfigProperty userConfig;
     private ArachniScopeProperty scope;
+    private String format;
     private Scan scan;
     private PrintStream console;
     private ArachniClient arachniClient;
 
     @DataBoundConstructor
-    public ArachniScanner(String url, String checks, ArachniScopeProperty scope, UserConfigProperty userConfig) {
+    public ArachniScanner(String url, String checks, ArachniScopeProperty scope, UserConfigProperty userConfig,
+            String format) {
         this.url = url;
         this.checks = checks;
         this.scope = scope;
         this.userConfig = userConfig;
+        this.format = format;
     }
 
     public String getUrl() {
@@ -68,6 +78,13 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
 
     public UserConfigProperty getUserConfig() {
         return userConfig;
+    }
+
+    public String getFormat() {
+        if (StringUtils.isEmpty(format)) {
+            return FORMAT_HTML;
+        }
+        return format;
     }
 
     @Symbol("arachniScanner")
@@ -157,14 +174,30 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
                 }
             }
 
-            File reportFile = new File(workspace.getRemote(), "arachni-report-html.zip");
+            String filename = String.format("arachni-report-%s.zip", getFormat());
+            File reportFile = new File(workspace.getRemote(), filename);
             if (!reportFile.exists()) {
                 if (!reportFile.createNewFile()) {
                     throw new AbortException("Could not create file " + reportFile.toString());
                 }
             }
             outstream = new FileOutputStream(reportFile);
-            scan.getReportHtml(outstream);
+            switch (getFormat()) {
+            case FORMAT_HTML:
+                scan.getReportHtml(outstream);
+                break;
+            case FORMAT_JSON:
+                writeZipFile(scan.getReportJson().getBytes(), "arachni-report.json", outstream);
+                break;
+            case FORMAT_XML:
+                writeZipFile(scan.getReportXml().getBytes(), "arachni-report.xml", outstream);
+                break;
+            case FORMAT_YAML:
+                writeZipFile(scan.getReportYaml().getBytes(), "arachni-report.yml", outstream);
+                break;
+            default:
+                throw new AbortException("Report format not supported");
+            }
         } catch (FileNotFoundException exception) {
             log.warning("Error when start Arachni Security Scan");
             console.println(exception.getMessage());
@@ -191,6 +224,14 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
         } finally {
             arachniClient.close();
         }
+    }
+    
+    private void writeZipFile(byte[] content, String entryName, OutputStream outstream) throws IOException {
+        ZipOutputStream zip = (new ZipOutputStream(outstream));
+        zip.putNextEntry(new ZipEntry(entryName));
+        zip.write(content);
+        zip.closeEntry();
+        zip.close();
     }
 
     private ArachniClient getArachniClient(ArachniPluginConfiguration config) {
