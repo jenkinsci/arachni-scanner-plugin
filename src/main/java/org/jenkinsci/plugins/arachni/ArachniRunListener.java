@@ -13,7 +13,7 @@ import hudson.tasks.Builder;
 
 @Extension
 public class ArachniRunListener extends RunListener<Run<?,?>> {
-    private static Logger log = Logger.getLogger(ArachniRunListener.class.getName());
+    private static final Logger log = Logger.getLogger(ArachniRunListener.class.getName());
     
     @Override
     public void onFinalized(Run<?, ?> run) {
