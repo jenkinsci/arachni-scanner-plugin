@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.arachni;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import hudson.Extension;
@@ -12,7 +13,7 @@ import hudson.tasks.Builder;
 
 @Extension
 public class ArachniRunListener extends RunListener<Run<?,?>> {
-    Logger log = Logger.getLogger(ArachniRunListener.class.getName());
+    private static final Logger log = Logger.getLogger(ArachniRunListener.class.getName());
     
     @Override
     public void onFinalized(Run<?, ?> run) {
@@ -24,7 +25,7 @@ public class ArachniRunListener extends RunListener<Run<?,?>> {
                     try {
                         ((ArachniScanner) builder).shutdownScan();
                     } catch (IOException exception) {
-                        log.severe(exception.getMessage());
+                        log.log(Level.SEVERE, exception.getMessage(), exception);
                     }
                 }
             }
