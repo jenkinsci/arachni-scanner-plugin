@@ -8,7 +8,7 @@
     <relativePath />
   </parent>
   <artifactId>arachni-scanner</artifactId>
-  <version>0.9.7-SNAPSHOT</version>
+  <version>0.9.7</version>
   <packaging>hpi</packaging>
   <properties>
     <jenkins.version>2.121.1</jenkins.version>
@@ -86,7 +86,7 @@
     <connection>scm:git:git@github.com:jenkinsci/arachni-scanner-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/arachni-scanner-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/arachni-scanner-plugin</url>
-    <tag>v0.9.3</tag>
+    <tag>v0.9.7</tag>
   </scm>
 
   <repositories>
