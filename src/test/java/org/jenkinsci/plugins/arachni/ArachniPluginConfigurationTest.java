@@ -26,32 +26,11 @@ public class ArachniPluginConfigurationTest {
         FormValidation validation = config.doCheckArachniServerUrl("qwert");
         assertEquals("URL is not valid.", validation.getMessage());
     }
-    
-    @Test
-    public void validateUserWithOk() throws Exception {
-        ArachniPluginConfiguration config = new ArachniPluginConfiguration();
-        FormValidation validation = config.doCheckUser("username", true);
-        assertEquals(FormValidation.ok(), validation);
-    }
-    
-    @Test
-    public void validateUserWithError() throws Exception {
-        ArachniPluginConfiguration config = new ArachniPluginConfiguration();
-        FormValidation validation = config.doCheckUser("", true);
-        assertEquals("User should not be empty for basic authentication.", validation.getMessage());
-    }
 
     @Test
-    public void validatePasswordWithOk() throws Exception {
+    public void validateEmptyCredentials() throws Exception {
         ArachniPluginConfiguration config = new ArachniPluginConfiguration();
-        FormValidation validation = config.doCheckPassword("password", true);
+        FormValidation validation = config.doCheckCredentialsId(null, null);
         assertEquals(FormValidation.ok(), validation);
-    }
-    
-    @Test
-    public void validatePasswordWithError() throws Exception {
-        ArachniPluginConfiguration config = new ArachniPluginConfiguration();
-        FormValidation validation = config.doCheckPassword("", true);
-        assertEquals("Password should not be empty for basic authentication.", validation.getMessage());
     }
 }

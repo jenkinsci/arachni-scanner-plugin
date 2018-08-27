@@ -9,6 +9,7 @@ import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,6 +19,11 @@ import org.apache.tools.zip.ZipOutputStream;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 
 import de.irissmann.arachni.client.ArachniClient;
 import de.irissmann.arachni.client.Scan;
@@ -126,7 +132,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
         console.println("Arachni server URL: " + arachniUrl);
         console.println("Site under scan: " + url);
 
-        arachniClient = getArachniClient(config);
+        arachniClient = getArachniClient(config, run);
 
         Scope scannerScope = null;
         if (scope != null) {
@@ -227,7 +233,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
             arachniClient.close();
         }
     }
-    
+
     private void writeZipFile(byte[] content, String entryName, OutputStream outstream) throws IOException {
         ZipOutputStream zip = (new ZipOutputStream(outstream));
         zip.putNextEntry(new ZipEntry(entryName));
@@ -236,10 +242,13 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
         zip.close();
     }
 
-    private ArachniClient getArachniClient(ArachniPluginConfiguration config) {
+    private ArachniClient getArachniClient(ArachniPluginConfiguration config, Run<?, ?> run) {
         ArachniRestClientBuilder builder = ArachniRestClientBuilder.create(config.getArachniServerUrl());
-        if (config.getBasicAuth()) {
-            builder.addCredentials(config.getUser(), config.getPassword());
+        StandardCredentials credentials = CredentialsProvider.findCredentialById(config.getCredentialsId(),
+                StandardCredentials.class, run, Collections.<DomainRequirement> emptyList());
+        if (credentials instanceof StandardUsernamePasswordCredentials) {
+            StandardUsernamePasswordCredentials upc = (StandardUsernamePasswordCredentials) credentials;
+            builder.addCredentials(upc.getUsername(), upc.getPassword().getPlainText());
         }
         builder.setMergeConflictStratey(MergeConflictStrategy.PREFER_STRING);
 
