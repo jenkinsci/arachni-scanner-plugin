@@ -244,11 +244,10 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
 
     private ArachniClient getArachniClient(ArachniPluginConfiguration config, Run<?, ?> run) {
         ArachniRestClientBuilder builder = ArachniRestClientBuilder.create(config.getArachniServerUrl());
-        StandardCredentials credentials = CredentialsProvider.findCredentialById(config.getCredentialsId(),
-                StandardCredentials.class, run, Collections.<DomainRequirement> emptyList());
-        if (credentials instanceof StandardUsernamePasswordCredentials) {
-            StandardUsernamePasswordCredentials upc = (StandardUsernamePasswordCredentials) credentials;
-            builder.addCredentials(upc.getUsername(), upc.getPassword().getPlainText());
+        StandardUsernamePasswordCredentials credentials = CredentialsProvider.findCredentialById(config.getCredentialsId(),
+                StandardUsernamePasswordCredentials.class, run, Collections.<DomainRequirement> emptyList());
+        if (credentials != null) {
+            builder.addCredentials(credentials.getUsername(), credentials.getPassword().getPlainText());
         }
         builder.setMergeConflictStratey(MergeConflictStrategy.PREFER_STRING);
 
