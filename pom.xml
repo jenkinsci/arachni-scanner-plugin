@@ -133,7 +133,7 @@
         <artifactId>maven-hpi-plugin</artifactId>
         <extensions>true</extensions>
         <configuration>
-          <compatibleSinceVersion>1.0.0-SNAPSHOT</compatibleSinceVersion>
+          <compatibleSinceVersion>1.0.0</compatibleSinceVersion>
         </configuration>
       </plugin>
     </plugins>
