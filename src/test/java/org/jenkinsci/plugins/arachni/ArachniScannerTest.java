@@ -4,9 +4,12 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
@@ -20,6 +23,8 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+
 import de.irissmann.arachni.client.Scan;
 import de.irissmann.arachni.client.request.ScanRequest;
 import de.irissmann.arachni.client.response.ScanResponse;
@@ -28,12 +33,13 @@ import de.irissmann.arachni.client.rest.ArachniRestClient;
 import de.irissmann.arachni.client.rest.ArachniRestClientBuilder;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.model.Run;
 import hudson.util.FormValidation;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ArachniPluginConfiguration.class, ArachniRestClient.class, ArachniRestClientBuilder.class, Scan.class,
-    Statistics.class, ScanResponse.class})
-@PowerMockIgnore({"javax.crypto.*" })
+    Statistics.class, ScanResponse.class, CredentialsProvider.class})
+@PowerMockIgnore({"org.apache.http.conn.ssl.*", "javax.net.ssl.*" , "javax.crypto.*"})
 public class ArachniScannerTest {
     
     @Rule
@@ -54,6 +60,10 @@ public class ArachniScannerTest {
         // init mock objects
         PowerMockito.mockStatic(ArachniPluginConfiguration.class);
         when(ArachniPluginConfiguration.get()).thenReturn(config);
+        
+        PowerMockito.mockStatic(CredentialsProvider.class);
+        when(CredentialsProvider.findCredentialById(anyString(), any(Class.class), any(Run.class), 
+                any(List.class))).thenReturn(null);
         
         Statistics statistics = mock(Statistics.class);
         when(statistics.getFoundPages()).thenReturn(3);
