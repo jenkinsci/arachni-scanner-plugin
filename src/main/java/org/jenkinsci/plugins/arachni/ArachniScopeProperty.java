@@ -37,7 +37,7 @@ public class ArachniScopeProperty implements Describable<ArachniScopeProperty> {
 
     @Override
     public Descriptor<ArachniScopeProperty> getDescriptor() {
-        return (DescriptorImpl) Jenkins.getInstance().getDescriptor(ArachniScopeProperty.class);
+        return (DescriptorImpl) Jenkins.get().getDescriptor(ArachniScopeProperty.class);
     }
 
     @Extension

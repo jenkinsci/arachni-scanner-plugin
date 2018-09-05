@@ -6,8 +6,6 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.UUID;
 
-import javax.servlet.ServletException;
-
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.QueryParameter;
@@ -76,7 +74,7 @@ public class ArachniPluginConfiguration extends GlobalConfiguration {
         return this;
     }
 
-    public FormValidation doCheckArachniServerUrl(@QueryParameter String value) throws IOException, ServletException {
+    public FormValidation doCheckArachniServerUrl(@QueryParameter String value) {
         try {
             new URL(value);
             return FormValidation.ok();

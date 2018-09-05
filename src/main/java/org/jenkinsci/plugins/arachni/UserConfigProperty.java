@@ -22,7 +22,7 @@ public class UserConfigProperty implements Describable<UserConfigProperty> {
     
     @Override
     public Descriptor<UserConfigProperty> getDescriptor() {
-        return (DescriptorImpl) Jenkins.getInstance().getDescriptor(UserConfigProperty.class);
+        return (DescriptorImpl) Jenkins.get().getDescriptor(UserConfigProperty.class);
     }
     
     @Extension

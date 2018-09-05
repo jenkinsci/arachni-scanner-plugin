@@ -21,7 +21,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 
@@ -59,7 +58,6 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
     private ArachniScopeProperty scope;
     private String format;
     private Scan scan;
-    private PrintStream console;
     private ArachniClient arachniClient;
 
     @DataBoundConstructor
@@ -125,7 +123,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener)
             throws InterruptedException, IOException {
-        console = listener.getLogger();
+        PrintStream console = listener.getLogger();
         ArachniPluginConfiguration config = ArachniPluginConfiguration.get();
         String arachniUrl = config.getArachniServerUrl();
         console.println("Start Arachni Security Scan");
@@ -235,7 +233,7 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
     }
 
     private void writeZipFile(byte[] content, String entryName, OutputStream outstream) throws IOException {
-        ZipOutputStream zip = (new ZipOutputStream(outstream));
+        ZipOutputStream zip = new ZipOutputStream(outstream);
         zip.putNextEntry(new ZipEntry(entryName));
         zip.write(content);
         zip.closeEntry();
