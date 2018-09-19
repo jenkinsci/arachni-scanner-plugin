@@ -34,6 +34,8 @@ import net.sf.json.JSONObject;
 @Extension
 public class ArachniPluginConfiguration extends GlobalConfiguration implements Serializable {
 
+    private static final long serialVersionUID = -2091111219470314999L;
+
     private String arachniServerUrl;
 
     /**
