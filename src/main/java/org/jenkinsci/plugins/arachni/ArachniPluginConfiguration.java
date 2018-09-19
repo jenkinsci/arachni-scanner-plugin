@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.arachni;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
@@ -31,16 +32,25 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
 @Extension
-public class ArachniPluginConfiguration extends GlobalConfiguration {
+public class ArachniPluginConfiguration extends GlobalConfiguration implements Serializable {
 
     private String arachniServerUrl;
 
+    /**
+     * @deprecated Just for backward compatibility, use credentials plugin instead.
+     */
     @Deprecated
     private transient boolean basicAuth;
 
+    /**
+     * @deprecated Just for backward compatibility, use credentials plugin instead.
+     */
     @Deprecated
     private transient String user;
 
+    /**
+     * @deprecated Just for backward compatibility, use credentials plugin instead.
+     */
     @Deprecated
     private transient String password;
 
@@ -89,7 +99,7 @@ public class ArachniPluginConfiguration extends GlobalConfiguration {
         }
         if (CredentialsProvider
                 .listCredentials(StandardUsernamePasswordCredentials.class, item, ACL.SYSTEM,
-                        Collections.<DomainRequirement> emptyList(), CredentialsMatchers.withId(credentialsId))
+                        Collections.<DomainRequirement> emptyList(), CredentialsMatchers.withId(value))
                 .isEmpty()) {
             return FormValidation.error("Cannot find currently selected credentials");
         }

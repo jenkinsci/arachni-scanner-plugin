@@ -139,55 +139,31 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
         }
 
         ScanRequestBuilder requestBuilder = ScanRequest.create().url(url).scope(scannerScope);
-        if (StringUtils.isNotBlank(checks)) {
-            for (String check : checks.split(",")) {
-                requestBuilder.addCheck(check.trim());
-            }
-        } else {
-            requestBuilder.addCheck("*");
-        }
+        addChecksToRequest(requestBuilder);
         ScanRequest scanRequest = requestBuilder.build();
 
-        // reads user configuration file if exists
-        String configuration = null;
-        if (userConfig != null && StringUtils.isNotBlank(userConfig.getFilename())) {
-            FilePath configFile = workspace.child(userConfig.getFilename());
-            if (!configFile.exists()) {
-                String message = String.format("Configuration file %s does not exists", userConfig.getFilename());
-                log.log(Level.WARNING, message);
-                throw new AbortException(message);
+        String configuration = readConfigurationFromFile(workspace);
+
+        scan = arachniClient.performScan(scanRequest, configuration);
+        console.println("Scan started with id: " + scan.getId());
+        log.log(Level.INFO, "Scan started with id: {0}", scan.getId());
+
+        ScanResponse scanInfo;
+        while (true) {
+            Thread.sleep(5000);
+            scanInfo = scan.monitor();
+            console.println(
+                    "Status: " + scanInfo.getStatus() + " - Pages found: " + scanInfo.getStatistics().getFoundPages()
+                            + " - Pages audited: " + scanInfo.getStatistics().getAuditedPages());
+            if (!scanInfo.isBusy()) {
+                console.println("Scan finished for id: " + scan.getId());
+                log.log(Level.INFO, "Scan finished for id {0}", scan.getId());
+                break;
             }
-            configuration = configFile.readToString();
         }
 
-        OutputStream outstream = null;
-        try {
-            scan = arachniClient.performScan(scanRequest, configuration);
-            console.println("Scan started with id: " + scan.getId());
-            log.log(Level.INFO, "Scan started with id: {0}", scan.getId());
-
-            ScanResponse scanInfo;
-            while (true) {
-                Thread.sleep(5000);
-                scanInfo = scan.monitor();
-                console.println("Status: " + scanInfo.getStatus() + " - Pages found: "
-                        + scanInfo.getStatistics().getFoundPages() + " - Pages audited: "
-                        + scanInfo.getStatistics().getAuditedPages());
-                if (!scanInfo.isBusy()) {
-                    console.println("Scan finished for id: " + scan.getId());
-                    log.log(Level.INFO, "Scan finished for id {0}", scan.getId());
-                    break;
-                }
-            }
-
-            String filename = String.format("arachni-report-%s.zip", getFormat());
-            File reportFile = new File(workspace.getRemote(), filename);
-            if (!reportFile.exists()) {
-                if (!reportFile.createNewFile()) {
-                    throw new AbortException("Could not create file " + reportFile.toString());
-                }
-            }
-            outstream = new FileOutputStream(reportFile);
+        File reportFile = createReportFile(workspace);
+        try (OutputStream outstream = new FileOutputStream(reportFile)) {
             switch (getFormat()) {
             case FORMAT_HTML:
                 scan.getReportHtml(outstream);
@@ -208,14 +184,10 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
             log.log(Level.WARNING, "Error when start Arachni Security Scan", exception);
             console.println(exception.getMessage());
             throw new AbortException();
-        } finally {
-            if (outstream != null) {
-                outstream.close();
-            }
         }
     }
 
-    protected void shutdownScan() throws IOException {
+    protected void shutdownScan() {
         if (scan == null) {
             return;
         }
@@ -232,6 +204,41 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
         }
     }
 
+    private void addChecksToRequest(ScanRequestBuilder requestBuilder) {
+        if (StringUtils.isNotBlank(checks)) {
+            for (String check : checks.split(",")) {
+                requestBuilder.addCheck(check.trim());
+            }
+        } else {
+            requestBuilder.addCheck("*");
+        }
+    }
+
+    private String readConfigurationFromFile(FilePath workspace) throws InterruptedException, IOException {
+        if (userConfig != null && StringUtils.isNotBlank(userConfig.getFilename())) {
+            FilePath configFile = workspace.child(userConfig.getFilename());
+            if (!configFile.exists()) {
+                String message = String.format("Configuration file %s does not exists", userConfig.getFilename());
+                log.log(Level.WARNING, message);
+                throw new AbortException(message);
+            }
+            return configFile.readToString();
+        }
+        return null;
+    }
+
+    private File createReportFile(FilePath workspace) throws IOException {
+        String filename = String.format("arachni-report-%s.zip", getFormat());
+        File file = new File(workspace.getRemote(), filename);
+        if (file.exists()) {
+            return file;
+        }
+        if (!file.createNewFile()) {
+            throw new AbortException("Could not create file " + file.toString());
+        }
+        return file;
+    }
+
     private void writeZipFile(byte[] content, String entryName, OutputStream outstream) throws IOException {
         ZipOutputStream zip = new ZipOutputStream(outstream);
         zip.putNextEntry(new ZipEntry(entryName));
@@ -242,8 +249,9 @@ public class ArachniScanner extends Builder implements SimpleBuildStep {
 
     private ArachniClient getArachniClient(ArachniPluginConfiguration config, Run<?, ?> run) {
         ArachniRestClientBuilder builder = ArachniRestClientBuilder.create(config.getArachniServerUrl());
-        StandardUsernamePasswordCredentials credentials = CredentialsProvider.findCredentialById(config.getCredentialsId(),
-                StandardUsernamePasswordCredentials.class, run, Collections.<DomainRequirement> emptyList());
+        StandardUsernamePasswordCredentials credentials = CredentialsProvider.findCredentialById(
+                config.getCredentialsId(), StandardUsernamePasswordCredentials.class, run,
+                Collections.<DomainRequirement> emptyList());
         if (credentials != null) {
             builder.addCredentials(credentials.getUsername(), credentials.getPassword().getPlainText());
         }

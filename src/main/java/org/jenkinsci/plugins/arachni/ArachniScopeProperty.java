@@ -53,7 +53,10 @@ public class ArachniScopeProperty implements Describable<ArachniScopeProperty> {
                 return FormValidation.ok();
             }
             try {
-                Integer.parseInt(value);
+                int limit = Integer.parseInt(value);
+                if (limit < 0) {
+                    return FormValidation.error("Not valid.");
+                }
                 return FormValidation.ok();
             } catch (NumberFormatException excecption) {
                 return FormValidation.error("Not valid.");
